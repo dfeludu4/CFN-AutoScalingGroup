@@ -1,0 +1,50 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Parameters": {
+      "LatestAmiID": {
+        "Description": "Region Specific image from Parameter Store",
+        "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+        "Default": "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2",
+        "ConstraintDescription": "Must be a valid AMI based on the Region"
+
+      },
+      "InstanceType": {
+        "Description": "Amazon EC2 instance from Parameter Store",
+        "Type": "AWS::SSM::Parameter::Value<String>",
+        "Default": "/dijolay/ec2/instancetype"
+
+      },
+      "Subnets": {
+        "Type": "List<AWS::EC2::Subnet::Id>",
+        "Description": "A list of subnets for the autoscaling-group"
+      }
+
+    },
+    "Resources": {
+      "myLaunchTemplate": {
+        "Type": "AWS::EC2::LaunchTemplate",
+        "Properties": {
+          "LaunchTemplateName": { "Fn::Sub": "${AWS::StackName}-launch-template" },
+          "LaunchTemplateData": {
+              "ImageId": { "Ref": "LatestAmiID" },
+              "InstanceType": { "Ref": "InstanceType" }
+                }
+        }
+      },
+      "myASG":{
+        "Type": "AWS::AutoScaling::AutoScalingGroup",
+        "Properties": {
+          "LaunchTemplate": {
+              "LaunchTemplateId": { "Ref": "myLaunchTemplate" },
+              "Version": { "Fn::GetAtt": [ "myLaunchTemplate", "LatestVersionNumber" ] }
+        },
+        "MaxSize": "5",
+        "MinSize": "3",
+        "DesiredCapacity": "3",
+        "VPCZoneIdentifier": { "Ref": "Subnets" }
+      }
+
+
+    }
+  }
+}
